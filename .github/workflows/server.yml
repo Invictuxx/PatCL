@@ -1,16 +1,16 @@
 name: Servidor con Cloudflare Tunnel
 
 on:
+  workflow_dispatch:
   schedule:
-    # Se reinicia cada 6 horas (máximo tiempo permitido por job en GitHub Actions)
-    - cron: '0 */6 * * *'
-  workflow_dispatch: # Botón manual para ejecutarlo cuando quieras
+    # Minuto no saturado (ej. 23) cada 6 horas
+    - cron: '23 */6 * * *'
 
 jobs:
-  run-server:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 360 # 6 horas límite
-
+    timeout-minutes: 340
+    
     steps:
       - name: Clonar código
         uses: actions/checkout@v4
