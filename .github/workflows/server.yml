@@ -37,6 +37,10 @@ jobs:
           AES_KEY: ${{ secrets.AES_KEY }}
           AES_IV: ${{ secrets.AES_IV }}
           UID_AUTH: ${{ secrets.UID_AUTH }}
+          HOST: ${{ secret.HOST }}
+          BASE_URL: ${{ secret.BASE_URL }}
+          AES_KEY: ${{ AES_KEY }}
+          AES_IV: ${{ AES_IV }}
         run: |
           nohup python main.py > server.log 2>&1 &
           sleep 3
