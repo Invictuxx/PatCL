@@ -1,0 +1,52 @@
+name: Servidor con Cloudflare Tunnel
+
+on:
+  schedule:
+    # Se reinicia cada 6 horas (máximo tiempo permitido por job en GitHub Actions)
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Botón manual para ejecutarlo cuando quieras
+
+jobs:
+  run-server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360 # 6 horas límite
+
+    steps:
+      - name: Clonar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Instalar dependencias del servidor
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Descargar e instalar Cloudflared
+        run: |
+          curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared.deb
+          rm cloudflared.deb
+
+      - name: Iniciar Servidor FastAPI en segundo plano
+        env:
+          AES_KEY: ${{ secrets.AES_KEY }}
+          AES_IV: ${{ secrets.AES_IV }}
+          UID_AUTH: ${{ secrets.UID_AUTH }}
+        run: |
+          nohup python main.py > server.log 2>&1 &
+          sleep 3
+          # Verificar si el servidor local respondió correctamente
+          curl -I http://localhost:8000 || (cat server.log && exit 1)
+
+      - name: Iniciar Cloudflare Tunnel
+        env:
+          TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+        run: |
+          echo "Iniciando túnel de Cloudflare..."
+          # Se ejecuta en primer plano para mantener el workflow activo durante las 6 horas
+          cloudflared tunnel --no-autoupdate run --token "$TUNNEL_TOKEN"
